@@ -1,1 +1,498 @@
-<!DOCTYPE html><html><head><title>LimpiaMarcas Pro</title></head><body><h1>LimpiaMarcas Pro</h1><p>Sitio web en construccion.</p></body></html></p></h1></body></title></head></html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borrador de Marcas de Agua</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f3f4f6;
+        }
+        #canvas-container {
+            position: relative;
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 0.5rem;
+            background-color: #e5e7eb;
+            background-image: linear-gradient(45deg, #d1d5db 25%, transparent 25%), linear-gradient(-45deg, #d1d5db 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #d1d5db 75%), linear-gradient(-45deg, transparent 75%, #d1d5db 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+            cursor: crosshair;
+        }
+        
+        /* Toast notification styles */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background-color: #1f2937;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-gray-800">
+
+    <!-- Navegación -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2 text-indigo-600">
+                    <i class="fas fa-eraser text-2xl"></i>
+                    <span class="font-bold text-xl text-gray-900">LimpiaMarcas Pro</span>
+                </div>
+                
+                <!-- Insignia de privacidad añadida -->
+                <div class="hidden sm:flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-semibold border border-green-200">
+                    <i class="fas fa-shield-alt"></i> 100% Privado (Local)
+                </div>
+
+                <div>
+                    <a href="#" class="text-sm font-medium text-gray-500 hover:text-gray-900">Inicio</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+        
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+                Elimina Marcas de Agua al Instante
+            </h1>
+            <p class="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
+                Sube tu imagen, selecciona la zona no deseada y nosotros nos encargamos del resto.
+            </p>
+            
+            <!-- Aviso de privacidad claro para el usuario -->
+            <div class="mt-5 inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-50 px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
+                <i class="fas fa-lock text-green-600"></i>
+                <span>Tus fotos <b>no se guardan en ningún servidor</b>. Todo se procesa en tu dispositivo.</span>
+            </div>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-8">
+            
+            <!-- Panel de Herramientas -->
+            <div class="w-full lg:w-1/3 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-6">
+                
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">1. Subir Imagen</h3>
+                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                            <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Haz clic para subir</span> o arrastra y suelta</p>
+                            <p class="text-xs text-gray-500">PNG, JPG, WEBP</p>
+                        </div>
+                        <input id="file-input" type="file" class="hidden" accept="image/*" />
+                    </label>
+                </div>
+
+                <div id="tools-section" class="opacity-50 pointer-events-none transition-opacity duration-300">
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">2. Herramientas</h3>
+                    <p class="text-sm text-gray-500 mb-4">Dibuja un rectángulo sobre la marca de agua en la imagen.</p>
+                    
+                    <div class="flex flex-col gap-3">
+                        <button id="btn-clear-selection" class="w-full py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center justify-center gap-2 transition">
+                            <i class="fas fa-undo"></i> Limpiar Selección
+                        </button>
+                        
+                        <button id="btn-remove" class="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center justify-center gap-2 transition">
+                            <i class="fas fa-magic"></i> Eliminar Marca
+                        </button>
+
+                        <button id="btn-enhance" class="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center justify-center gap-2 transition">
+                            <i class="fas fa-expand-arrows-alt"></i> Aumentar Resolución (2x)
+                        </button>
+                    </div>
+                </div>
+
+                <div id="export-section" class="opacity-50 pointer-events-none transition-opacity duration-300 mt-auto pt-4 border-t border-gray-100">
+                    <button id="btn-download" class="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center justify-center gap-2 transition">
+                        <i class="fas fa-download"></i> Descargar Imagen
+                    </button>
+                </div>
+            </div>
+
+            <!-- Área de Lienzo (Canvas) -->
+            <div class="w-full lg:w-2/3 bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center min-h-[400px]">
+                <div id="empty-state" class="text-center text-gray-400 flex flex-col items-center">
+                    <i class="far fa-image text-6xl mb-4 text-gray-300"></i>
+                    <p>La imagen aparecerá aquí</p>
+                </div>
+                
+                <div id="canvas-container" class="hidden">
+                    <canvas id="main-canvas"></canvas>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-sm text-gray-500">
+                &copy; 2026 LimpiaMarcas Pro. Esta es una demostración de lienzo front-end.
+            </p>
+        </div>
+    </footer>
+
+    <!-- Contenedor para Notificaciones Toast -->
+    <div id="toast-container"></div>
+
+    <script>
+        // Elementos del DOM
+        const fileInput = document.getElementById('file-input');
+        const canvas = document.getElementById('main-canvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvas-container');
+        const emptyState = document.getElementById('empty-state');
+        const toolsSection = document.getElementById('tools-section');
+        const exportSection = document.getElementById('export-section');
+        
+        const btnClearSelection = document.getElementById('btn-clear-selection');
+        const btnRemove = document.getElementById('btn-remove');
+        const btnEnhance = document.getElementById('btn-enhance');
+        const btnDownload = document.getElementById('btn-download');
+
+        // Estado de la aplicación
+        let currentImage = null;
+        let isDrawing = false;
+        let startX = 0;
+        let startY = 0;
+        let currentX = 0;
+        let currentY = 0;
+        let selectionRect = null; // {x, y, w, h}
+        let scaleFactor = 1; // Para ajustar coordenadas si el canvas se redimensiona por CSS
+
+        // --- Sistema de Notificaciones (Toast) ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            
+            let icon = 'fa-info-circle';
+            if (type === 'success') {
+                icon = 'fa-check-circle';
+                toast.style.borderLeft = '4px solid #10b981';
+            } else if (type === 'error') {
+                icon = 'fa-exclamation-circle';
+                toast.style.borderLeft = '4px solid #ef4444';
+            }
+
+            toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+
+            // Animar entrada
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Eliminar después de 3 segundos
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // --- Carga de Imágenes ---
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!file.type.match('image.*')) {
+                showToast('Por favor, sube un archivo de imagen válido.', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    currentImage = img;
+                    initCanvas(img);
+                    
+                    // Mostrar UI
+                    emptyState.classList.add('hidden');
+                    canvasContainer.classList.remove('hidden');
+                    toolsSection.classList.remove('opacity-50', 'pointer-events-none');
+                    exportSection.classList.remove('opacity-50', 'pointer-events-none');
+                    
+                    showToast('Imagen cargada correctamente', 'success');
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        });
+
+        function initCanvas(img) {
+            // Establecer dimensiones reales del canvas basadas en la imagen
+            canvas.width = img.width;
+            canvas.height = img.height;
+            selectionRect = null;
+            renderCanvas();
+        }
+
+        function renderCanvas() {
+            if (!currentImage) return;
+
+            // Limpiar canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Dibujar imagen base
+            ctx.drawImage(currentImage, 0, 0);
+
+            // Dibujar rectángulo de selección si existe
+            if (selectionRect) {
+                ctx.fillStyle = 'rgba(79, 70, 229, 0.3)'; // Indigo con transparencia
+                ctx.strokeStyle = '#4f46e5';
+                ctx.lineWidth = 2 * (canvas.width / canvas.clientWidth); // Ajustar grosor según escala visual
+                
+                ctx.beginPath();
+                ctx.rect(selectionRect.x, selectionRect.y, selectionRect.w, selectionRect.h);
+                ctx.fill();
+                ctx.stroke();
+                
+                // Dibujar manejadores en las esquinas
+                ctx.fillStyle = 'white';
+                const handleSize = 5 * (canvas.width / canvas.clientWidth);
+                ctx.fillRect(selectionRect.x - handleSize, selectionRect.y - handleSize, handleSize*2, handleSize*2);
+                ctx.strokeRect(selectionRect.x - handleSize, selectionRect.y - handleSize, handleSize*2, handleSize*2);
+            }
+            
+            // Dibujar rectángulo mientras se arrastra
+            if (isDrawing) {
+                const w = currentX - startX;
+                const h = currentY - startY;
+                
+                ctx.fillStyle = 'rgba(79, 70, 229, 0.2)';
+                ctx.strokeStyle = '#4f46e5';
+                ctx.lineWidth = 2 * (canvas.width / canvas.clientWidth);
+                
+                ctx.beginPath();
+                ctx.rect(startX, startY, w, h);
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+
+        // --- Lógica de Interacción con el Canvas (Ratón y Táctil) ---
+        
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            // Calcular factor de escala porque el canvas CSS puede ser más pequeño que el canvas HTML
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            let clientX, clientY;
+
+            if (evt.touches && evt.touches.length > 0) {
+                clientX = evt.touches[0].clientX;
+                clientY = evt.touches[0].clientY;
+            } else {
+                clientX = evt.clientX;
+                clientY = evt.clientY;
+            }
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function startInteraction(e) {
+            if (!currentImage) return;
+            e.preventDefault(); // Prevenir scroll en móviles
+            const pos = getMousePos(e);
+            startX = pos.x;
+            startY = pos.y;
+            currentX = pos.x;
+            currentY = pos.y;
+            isDrawing = true;
+            selectionRect = null; // Reiniciar selección anterior
+        }
+
+        function moveInteraction(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            const pos = getMousePos(e);
+            currentX = pos.x;
+            currentY = pos.y;
+            renderCanvas();
+        }
+
+        function endInteraction(e) {
+            if (!isDrawing) return;
+            isDrawing = false;
+            
+            const w = currentX - startX;
+            const h = currentY - startY;
+
+            // Solo guardar selección si tiene un tamaño mínimo
+            if (Math.abs(w) > 10 && Math.abs(h) > 10) {
+                selectionRect = {
+                    x: w > 0 ? startX : currentX,
+                    y: h > 0 ? startY : currentY,
+                    w: Math.abs(w),
+                    h: Math.abs(h)
+                };
+            }
+            renderCanvas();
+        }
+
+        // Eventos Mouse
+        canvas.addEventListener('mousedown', startInteraction);
+        canvas.addEventListener('mousemove', moveInteraction);
+        window.addEventListener('mouseup', endInteraction);
+
+        // Eventos Touch (Móvil)
+        canvas.addEventListener('touchstart', startInteraction, {passive: false});
+        canvas.addEventListener('touchmove', moveInteraction, {passive: false});
+        window.addEventListener('touchend', endInteraction);
+
+        // --- Herramientas ---
+
+        btnClearSelection.addEventListener('click', () => {
+            selectionRect = null;
+            renderCanvas();
+        });
+
+        btnRemove.addEventListener('click', () => {
+            if (!currentImage) return;
+            if (!selectionRect) {
+                showToast('Por favor, dibuja un rectángulo sobre la marca de agua primero.', 'error');
+                return;
+            }
+
+            // Simulación de "Eliminación" mediante técnica de difuminado y copia de bordes
+            // En una app real, aquí se enviaría la imagen y las coordenadas a una API de IA
+            
+            showToast('Procesando área seleccionada...', 'info');
+
+            // Renderizamos la imagen limpia sin el rectángulo de selección
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(currentImage, 0, 0);
+
+            // Aplicar un efecto de desenfoque al área seleccionada
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(selectionRect.x, selectionRect.y, selectionRect.w, selectionRect.h);
+            ctx.clip();
+            
+            // Un truco común en canvas: aplicar filtro blur y dibujar la imagen de nuevo
+            ctx.filter = 'blur(10px) opacity(0.9)'; 
+            
+            // Para mejorar el efecto, copiamos pedazos cercanos al borde hacia adentro
+            // Dibujamos la imagen ligeramente desplazada y difuminada para tapar la marca
+            ctx.drawImage(canvas, 10, 10);
+            ctx.drawImage(canvas, -10, -10);
+            
+            ctx.filter = 'blur(15px)';
+            ctx.drawImage(currentImage, 0, 0);
+            
+            ctx.restore();
+
+            // Actualizar currentImage con el nuevo resultado para guardar el estado
+            const newImg = new Image();
+            newImg.onload = function() {
+                currentImage = newImg;
+                selectionRect = null;
+                renderCanvas();
+                showToast('¡Marca atenuada! (Procesamiento 100% Local)', 'success');
+            }
+            newImg.src = canvas.toDataURL('image/png');
+        });
+
+        btnEnhance.addEventListener('click', () => {
+            if (!currentImage) return;
+
+            showToast('Aumentando resolución (Procesando en tu dispositivo)...', 'info');
+
+            // Usamos setTimeout para permitir que la interfaz se actualice antes del procesamiento pesado
+            setTimeout(() => {
+                // Creamos un canvas temporal con el doble de tamaño de la imagen original
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = currentImage.width * 2;
+                tempCanvas.height = currentImage.height * 2;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                // Configuramos el renderizado de alta calidad para el upscaling
+                tempCtx.imageSmoothingEnabled = true;
+                tempCtx.imageSmoothingQuality = 'high';
+                
+                // Aplicamos un ligero filtro para mejorar nitidez y color al ampliar
+                tempCtx.filter = 'contrast(1.05) saturate(1.1) brightness(1.02)';
+                
+                // Dibujamos la imagen original a doble escala
+                tempCtx.drawImage(currentImage, 0, 0, tempCanvas.width, tempCanvas.height);
+
+                // Actualizar la imagen actual con la nueva versión de alta resolución
+                const newImg = new Image();
+                newImg.onload = function() {
+                    currentImage = newImg;
+                    initCanvas(newImg); // Re-inicializamos para adaptar el canvas al nuevo tamaño
+                    showToast('¡Resolución duplicada con éxito!', 'success');
+                }
+                // Exportamos con calidad máxima
+                newImg.src = tempCanvas.toDataURL('image/png', 1.0); 
+            }, 100);
+        });
+
+        // --- Exportación ---
+        btnDownload.addEventListener('click', () => {
+            if (!currentImage) return;
+            
+            // Asegurarnos de dibujar sin el rectángulo de selección activo
+            const tempRect = selectionRect;
+            selectionRect = null;
+            renderCanvas();
+
+            // Crear enlace de descarga
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'imagen_limpia_' + new Date().getTime() + '.png';
+            link.href = dataUrl;
+            link.click();
+            
+            // Restaurar selección si la había
+            selectionRect = tempRect;
+            renderCanvas();
+            showToast('Imagen descargada exitosamente', 'success');
+        });
+
+        // Redibujar si la ventana cambia de tamaño para mantener consistencia
+        window.addEventListener('resize', () => {
+            if (currentImage) renderCanvas();
+        });
+
+    </script>
+</body>
+</html>
