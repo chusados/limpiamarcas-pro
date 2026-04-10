@@ -1101,23 +1101,257 @@
 
         btnEnhance.addEventListener('click', () => {
             if (!currentImage) return;
-            showToast('Aumentando resolución…', 'info');
+            
+            // Disable button to prevent double-click
+            btnEnhance.disabled = true;
+            btnEnhance.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando…';
+            showToast('Mejorando resolución — esto puede tardar unos segundos…', 'info');
+
             setTimeout(() => {
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = currentImage.width * 2;
-                tempCanvas.height = currentImage.height * 2;
-                const tempCtx = tempCanvas.getContext('2d');
-                tempCtx.imageSmoothingEnabled = true;
-                tempCtx.imageSmoothingQuality = 'high';
-                tempCtx.filter = 'contrast(1.05) saturate(1.1) brightness(1.02)';
-                tempCtx.drawImage(currentImage, 0, 0, tempCanvas.width, tempCanvas.height);
-                const newImg = new Image();
-                newImg.onload = function() {
-                    currentImage = newImg;
-                    initCanvas(newImg);
-                    showToast('Resolución duplicada', 'success');
+                try {
+                    const srcW = currentImage.width;
+                    const srcH = currentImage.height;
+                    const dstW = srcW * 2;
+                    const dstH = srcH * 2;
+
+                    // --- Step 1: High-quality upscale using two-pass approach ---
+                    // First pass: scale to intermediate size (avoids excessive single-step interpolation blur)
+                    const midCanvas = document.createElement('canvas');
+                    const midW = Math.round(srcW * 1.414); // sqrt(2) intermediate
+                    const midH = Math.round(srcH * 1.414);
+                    midCanvas.width = midW;
+                    midCanvas.height = midH;
+                    const midCtx = midCanvas.getContext('2d');
+                    midCtx.imageSmoothingEnabled = true;
+                    midCtx.imageSmoothingQuality = 'high';
+                    midCtx.drawImage(currentImage, 0, 0, midW, midH);
+
+                    // Second pass: scale to final 2x
+                    const upCanvas = document.createElement('canvas');
+                    upCanvas.width = dstW;
+                    upCanvas.height = dstH;
+                    const upCtx = upCanvas.getContext('2d');
+                    upCtx.imageSmoothingEnabled = true;
+                    upCtx.imageSmoothingQuality = 'high';
+                    upCtx.drawImage(midCanvas, 0, 0, dstW, dstH);
+
+                    // Get the upscaled pixel data
+                    const imgData = upCtx.getImageData(0, 0, dstW, dstH);
+                    const pixels = imgData.data;
+
+                    // --- Step 2: Unsharp Mask (multi-pass at different radii for detail recovery) ---
+                    function applyUnsharpMask(imageData, width, height, radius, amount, threshold) {
+                        const src = new Uint8ClampedArray(imageData.data);
+                        const blurred = new Float32Array(width * height * 4);
+
+                        // Gaussian blur (separable)
+                        const kernelSize = radius * 2 + 1;
+                        const sigma = radius / 2.5;
+                        const kernel = new Float32Array(kernelSize);
+                        let kSum = 0;
+                        for (let i = 0; i < kernelSize; i++) {
+                            const x = i - radius;
+                            kernel[i] = Math.exp(-(x * x) / (2 * sigma * sigma));
+                            kSum += kernel[i];
+                        }
+                        for (let i = 0; i < kernelSize; i++) kernel[i] /= kSum;
+
+                        // Horizontal pass
+                        const temp = new Float32Array(width * height * 4);
+                        for (let y = 0; y < height; y++) {
+                            for (let x = 0; x < width; x++) {
+                                let r = 0, g = 0, b = 0;
+                                for (let k = -radius; k <= radius; k++) {
+                                    const px = Math.min(Math.max(x + k, 0), width - 1);
+                                    const srcIdx = (y * width + px) * 4;
+                                    const wt = kernel[k + radius];
+                                    r += src[srcIdx] * wt;
+                                    g += src[srcIdx + 1] * wt;
+                                    b += src[srcIdx + 2] * wt;
+                                }
+                                const idx = (y * width + x) * 4;
+                                temp[idx] = r;
+                                temp[idx + 1] = g;
+                                temp[idx + 2] = b;
+                            }
+                        }
+
+                        // Vertical pass
+                        for (let y = 0; y < height; y++) {
+                            for (let x = 0; x < width; x++) {
+                                let r = 0, g = 0, b = 0;
+                                for (let k = -radius; k <= radius; k++) {
+                                    const py = Math.min(Math.max(y + k, 0), height - 1);
+                                    const srcIdx = (py * width + x) * 4;
+                                    const wt = kernel[k + radius];
+                                    r += temp[srcIdx] * wt;
+                                    g += temp[srcIdx + 1] * wt;
+                                    b += temp[srcIdx + 2] * wt;
+                                }
+                                const idx = (y * width + x) * 4;
+                                blurred[idx] = r;
+                                blurred[idx + 1] = g;
+                                blurred[idx + 2] = b;
+                            }
+                        }
+
+                        // Apply unsharp mask: original + amount * (original - blurred)
+                        for (let i = 0; i < width * height; i++) {
+                            const idx = i * 4;
+                            for (let c = 0; c < 3; c++) {
+                                const diff = src[idx + c] - blurred[idx + c];
+                                if (Math.abs(diff) >= threshold) {
+                                    imageData.data[idx + c] = Math.max(0, Math.min(255,
+                                        Math.round(src[idx + c] + amount * diff)));
+                                }
+                            }
+                        }
+                    }
+
+                    // Fine detail sharpening (small radius, moderate amount)
+                    applyUnsharpMask(imgData, dstW, dstH, 1, 0.8, 2);
+                    // Medium detail sharpening (medium radius, lighter amount)
+                    applyUnsharpMask(imgData, dstW, dstH, 3, 0.4, 3);
+                    // Large structure enhancement (large radius, very subtle)
+                    applyUnsharpMask(imgData, dstW, dstH, 8, 0.15, 4);
+
+                    // --- Step 3: Local Contrast Enhancement (CLAHE-inspired) ---
+                    // Enhance local contrast to bring out details without blowing highlights
+                    function enhanceLocalContrast(imageData, width, height, tileSize, clipLimit) {
+                        const data = imageData.data;
+                        const blurRadius = Math.round(tileSize / 2);
+                        const sigma = blurRadius / 2;
+                        const kernel = [];
+                        let ksum = 0;
+                        for (let i = -blurRadius; i <= blurRadius; i++) {
+                            const g = Math.exp(-(i * i) / (2 * sigma * sigma));
+                            kernel.push(g);
+                            ksum += g;
+                        }
+                        for (let i = 0; i < kernel.length; i++) kernel[i] /= ksum;
+
+                        // Compute luminance
+                        const lum = new Float32Array(width * height);
+                        for (let i = 0; i < width * height; i++) {
+                            const idx = i * 4;
+                            lum[i] = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+                        }
+
+                        // Blur luminance (separable Gaussian)
+                        const lumH = new Float32Array(width * height);
+                        for (let y = 0; y < height; y++) {
+                            for (let x = 0; x < width; x++) {
+                                let sum = 0;
+                                for (let k = -blurRadius; k <= blurRadius; k++) {
+                                    const px = Math.min(Math.max(x + k, 0), width - 1);
+                                    sum += lum[y * width + px] * kernel[k + blurRadius];
+                                }
+                                lumH[y * width + x] = sum;
+                            }
+                        }
+                        const lumBlurred = new Float32Array(width * height);
+                        for (let y = 0; y < height; y++) {
+                            for (let x = 0; x < width; x++) {
+                                let sum = 0;
+                                for (let k = -blurRadius; k <= blurRadius; k++) {
+                                    const py = Math.min(Math.max(y + k, 0), height - 1);
+                                    sum += lumH[py * width + x] * kernel[k + blurRadius];
+                                }
+                                lumBlurred[y * width + x] = sum;
+                            }
+                        }
+
+                        // Adaptive enhancement: gently boost local contrast
+                        const enhanceAmount = clipLimit;
+                        for (let i = 0; i < width * height; i++) {
+                            const idx = i * 4;
+                            const localMean = lumBlurred[i];
+                            const diff = lum[i] - localMean;
+                            const boost = diff * enhanceAmount;
+                            for (let c = 0; c < 3; c++) {
+                                data[idx + c] = Math.max(0, Math.min(255,
+                                    Math.round(data[idx + c] + boost)));
+                            }
+                        }
+                    }
+
+                    enhanceLocalContrast(imgData, dstW, dstH, 32, 0.15);
+
+                    // --- Step 4: Subtle edge enhancement using Laplacian ---
+                    function subtleEdgeEnhance(imageData, width, height, strength) {
+                        const src = new Uint8ClampedArray(imageData.data);
+                        for (let y = 1; y < height - 1; y++) {
+                            for (let x = 1; x < width - 1; x++) {
+                                const idx = (y * width + x) * 4;
+                                for (let c = 0; c < 3; c++) {
+                                    const center = src[idx + c];
+                                    const top = src[((y - 1) * width + x) * 4 + c];
+                                    const bottom = src[((y + 1) * width + x) * 4 + c];
+                                    const left = src[(y * width + (x - 1)) * 4 + c];
+                                    const right = src[(y * width + (x + 1)) * 4 + c];
+                                    // Laplacian: center * 4 - neighbors
+                                    const laplacian = center * 4 - top - bottom - left - right;
+                                    // Only enhance if not creating noise (threshold)
+                                    if (Math.abs(laplacian) > 5) {
+                                        imageData.data[idx + c] = Math.max(0, Math.min(255,
+                                            Math.round(center + laplacian * strength)));
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    subtleEdgeEnhance(imgData, dstW, dstH, 0.06);
+
+                    // --- Step 5: Gentle color and tonal correction ---
+                    // Slight saturation boost + micro-contrast
+                    for (let i = 0; i < dstW * dstH; i++) {
+                        const idx = i * 4;
+                        let r = imgData.data[idx];
+                        let g = imgData.data[idx + 1];
+                        let b = imgData.data[idx + 2];
+
+                        // Convert to HSL-like for saturation boost
+                        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                        const satBoost = 1.08;
+                        r = Math.max(0, Math.min(255, Math.round(gray + (r - gray) * satBoost)));
+                        g = Math.max(0, Math.min(255, Math.round(gray + (g - gray) * satBoost)));
+                        b = Math.max(0, Math.min(255, Math.round(gray + (b - gray) * satBoost)));
+
+                        // Gentle S-curve for contrast (applied per channel)
+                        function sCurve(v) {
+                            const n = v / 255;
+                            // Mild sigmoid-like curve
+                            const adjusted = n < 0.5
+                                ? 0.5 * Math.pow(2 * n, 1.08)
+                                : 1 - 0.5 * Math.pow(2 * (1 - n), 1.08);
+                            return Math.max(0, Math.min(255, Math.round(adjusted * 255)));
+                        }
+
+                        imgData.data[idx] = sCurve(r);
+                        imgData.data[idx + 1] = sCurve(g);
+                        imgData.data[idx + 2] = sCurve(b);
+                    }
+
+                    // Write final result
+                    upCtx.putImageData(imgData, 0, 0);
+
+                    // Save as new current image
+                    const newImg = new Image();
+                    newImg.onload = function() {
+                        currentImage = newImg;
+                        initCanvas(newImg);
+                        btnEnhance.disabled = false;
+                        btnEnhance.innerHTML = '<i class="fas fa-up-right-and-down-left-from-center"></i> Resolución 2×';
+                        showToast(`¡Resolución mejorada! ${srcW}×${srcH} → ${dstW}×${dstH}`, 'success');
+                    }
+                    newImg.src = upCanvas.toDataURL('image/png', 1.0);
+                } catch (err) {
+                    console.error('Enhancement error:', err);
+                    btnEnhance.disabled = false;
+                    btnEnhance.innerHTML = '<i class="fas fa-up-right-and-down-left-from-center"></i> Resolución 2×';
+                    showToast('Error al mejorar la imagen', 'error');
                 }
-                newImg.src = tempCanvas.toDataURL('image/png', 1.0);
             }, 100);
         });
 
