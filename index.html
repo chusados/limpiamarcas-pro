@@ -3,34 +3,490 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Borrador de Marcas de Agua</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>LimpiaMarcas — Elimina marcas de agua</title>
+    <meta name="description" content="Elimina marcas de agua de tus imágenes de forma rápida, privada y 100% local.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: #f3f4f6;
+        :root {
+            --bg: #fafafa;
+            --surface: #ffffff;
+            --surface-hover: #f5f5f5;
+            --border: #e8e8e8;
+            --border-hover: #d0d0d0;
+            --text: #1a1a1a;
+            --text-secondary: #6b6b6b;
+            --text-muted: #999999;
+            --accent: #4f46e5;
+            --accent-hover: #4338ca;
+            --accent-light: #eef2ff;
+            --success: #059669;
+            --success-light: #ecfdf5;
+            --danger: #dc2626;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+            --shadow-lg: 0 8px 30px rgba(0,0,0,0.08);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ---- Animaciones ---- */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-16px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 0.4; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+
+        @keyframes draw-check {
+            to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.5s ease-out both;
+        }
+
+        .animate-in-delay-1 { animation-delay: 0.1s; }
+        .animate-in-delay-2 { animation-delay: 0.2s; }
+        .animate-in-delay-3 { animation-delay: 0.3s; }
+        .animate-in-delay-4 { animation-delay: 0.4s; }
+
+        /* ---- Navegación ---- */
+        nav {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            backdrop-filter: blur(12px);
+            background: rgba(255,255,255,0.85);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text);
+        }
+
+        .nav-logo svg {
+            transition: transform var(--transition);
+        }
+
+        .nav-logo:hover svg {
+            transform: rotate(-8deg) scale(1.05);
+        }
+
+        .nav-logo span {
+            font-size: 1.05rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--success);
+            background: var(--success-light);
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(5, 150, 105, 0.15);
+        }
+
+        .nav-badge i {
+            font-size: 0.65rem;
+        }
+
+        /* ---- Hero ---- */
+        .hero {
+            text-align: center;
+            padding: 3rem 1.5rem 1.5rem;
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+            color: var(--text);
+        }
+
+        .hero p {
+            margin-top: 0.75rem;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .privacy-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 1.25rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--surface);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .privacy-note i {
+            color: var(--success);
+            font-size: 0.75rem;
+        }
+
+        /* ---- Layout principal ---- */
+        .app-layout {
+            display: flex;
+            gap: 1.5rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            flex: 1;
+            width: 100%;
+        }
+
+        /* ---- Panel lateral ---- */
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow var(--transition), border-color var(--transition);
+        }
+
+        .panel:hover {
+            box-shadow: var(--shadow-md);
+            border-color: var(--border-hover);
+        }
+
+        .panel-title {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            margin-bottom: 0.85rem;
+        }
+
+        /* ---- Upload ---- */
+        .upload-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.75rem 1rem;
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition);
+            background: var(--bg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(79,70,229,0.04) 50%, transparent 100%);
+            background-size: 200% 100%;
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .upload-area:hover::before {
+            opacity: 1;
+            animation: shimmer 2s infinite;
+        }
+
+        .upload-area input { display: none; }
+
+        .upload-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--accent-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+            transition: transform var(--transition);
+        }
+
+        .upload-area:hover .upload-icon {
+            transform: translateY(-2px);
+            animation: float 2s ease-in-out infinite;
+        }
+
+        .upload-icon i {
+            color: var(--accent);
+            font-size: 1rem;
+        }
+
+        .upload-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .upload-text strong {
+            color: var(--accent);
+        }
+
+        .upload-formats {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 0.35rem;
+        }
+
+        /* ---- Botones ---- */
+        .btn {
+            width: 100%;
+            padding: 0.7rem 1rem;
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all var(--transition);
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0);
+            transition: background var(--transition);
+        }
+
+        .btn:active::after {
+            background: rgba(0,0,0,0.05);
+        }
+
+        .btn-outline {
+            background: var(--surface);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            background: var(--surface-hover);
+            border-color: var(--border-hover);
+            color: var(--text);
+        }
+
+        .btn-primary {
+            background: var(--text);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-accent:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #047857;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25);
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .tools-disabled {
+            opacity: 0.4;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 0.25rem 0;
+        }
+
+        /* ---- Canvas ---- */
+        .canvas-area {
+            flex: 1;
+            min-width: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 420px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow var(--transition);
+        }
+
+        .canvas-area:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+        }
+
+        .empty-state-icon i {
+            font-size: 1.5rem;
+            color: var(--border-hover);
+        }
+
+        .empty-state p {
+            font-size: 0.85rem;
+        }
+
         #canvas-container {
             position: relative;
             display: inline-block;
             max-width: 100%;
             overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            border-radius: 0.5rem;
             background-color: #e5e7eb;
             background-image: linear-gradient(45deg, #d1d5db 25%, transparent 25%), linear-gradient(-45deg, #d1d5db 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #d1d5db 75%), linear-gradient(-45deg, transparent 75%, #d1d5db 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
         }
+
         canvas {
             display: block;
             max-width: 100%;
             height: auto;
             cursor: crosshair;
         }
-        
-        /* Toast notification styles */
+
+        .hidden { display: none !important; }
+
+        /* ---- Footer ---- */
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            margin-top: auto;
+            animation: fadeIn 0.6s ease-out 0.5s both;
+        }
+
+        /* ---- Toast ---- */
         #toast-container {
             position: fixed;
             bottom: 20px;
@@ -38,136 +494,172 @@
             z-index: 50;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
+
         .toast {
-            background-color: #1f2937;
+            background: var(--text);
             color: white;
-            padding: 12px 20px;
-            border-radius: 8px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 10px 18px;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-lg);
             opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s ease;
+            transform: translateY(12px) scale(0.96);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: 0.83rem;
+            font-weight: 500;
+            max-width: 360px;
         }
+
         .toast.show {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) scale(1);
+        }
+
+        .toast i { font-size: 0.9rem; }
+
+        .toast-success { border-left: 3px solid var(--success); }
+        .toast-error { border-left: 3px solid var(--danger); }
+        .toast-info { border-left: 3px solid var(--accent); }
+
+        /* ---- Responsive ---- */
+        @media (max-width: 768px) {
+            .app-layout {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+            }
+            .hero h1 {
+                font-size: 1.6rem;
+            }
+            .nav-badge {
+                display: none;
+            }
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col text-gray-800">
+<body>
 
     <!-- Navegación -->
-    <nav class="bg-white shadow-sm border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center gap-2 text-indigo-600">
-                    <i class="fas fa-eraser text-2xl"></i>
-                    <span class="font-bold text-xl text-gray-900">LimpiaMarcas Pro</span>
-                </div>
-                
-                <!-- Insignia de privacidad añadida -->
-                <div class="hidden sm:flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1 rounded-full text-xs font-semibold border border-green-200">
-                    <i class="fas fa-shield-alt"></i> 100% Privado (Local)
-                </div>
+    <nav>
+        <a href="#" class="nav-logo">
+            <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+                <rect width="32" height="32" rx="8" fill="#1a1a1a"/>
+                <path d="M10 22L14 10h4l4 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+                    <animate attributeName="stroke-dasharray" from="0 40" to="40 0" dur="1s" fill="freeze"/>
+                </path>
+                <line x1="11.5" y1="18" x2="20.5" y2="18" stroke="white" stroke-width="2" stroke-linecap="round">
+                    <animate attributeName="stroke-dasharray" from="0 12" to="12 0" dur="0.6s" begin="0.6s" fill="freeze"/>
+                </line>
+                <circle cx="24" cy="9" r="3.5" fill="#4f46e5" opacity="0.9">
+                    <animate attributeName="r" values="3.5;4;3.5" dur="2s" repeatCount="indefinite"/>
+                </circle>
+                <line x1="22" y1="7" x2="26" y2="11" stroke="white" stroke-width="1.5" stroke-linecap="round">
+                    <animate attributeName="opacity" values="1;0.6;1" dur="2s" repeatCount="indefinite"/>
+                </line>
+                <line x1="26" y1="7" x2="22" y2="11" stroke="white" stroke-width="1.5" stroke-linecap="round">
+                    <animate attributeName="opacity" values="1;0.6;1" dur="2s" repeatCount="indefinite"/>
+                </line>
+            </svg>
+            <span>LimpiaMarcas</span>
+        </a>
 
-                <div>
-                    <a href="#" class="text-sm font-medium text-gray-500 hover:text-gray-900">Inicio</a>
-                </div>
-            </div>
+        <div class="nav-badge">
+            <i class="fas fa-lock"></i>
+            100% Privado
         </div>
     </nav>
 
-    <!-- Contenido Principal -->
-    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-                Elimina Marcas de Agua al Instante
-            </h1>
-            <p class="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
-                Sube tu imagen, selecciona la zona no deseada y nosotros nos encargamos del resto.
-            </p>
-            
-            <!-- Aviso de privacidad claro para el usuario -->
-            <div class="mt-5 inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-50 px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
-                <i class="fas fa-lock text-green-600"></i>
-                <span>Tus fotos <b>no se guardan en ningún servidor</b>. Todo se procesa en tu dispositivo.</span>
-            </div>
+    <!-- Hero -->
+    <section class="hero animate-in">
+        <h1>Elimina marcas de agua al instante</h1>
+        <p>Sube tu imagen, selecciona la zona y nosotros nos encargamos del resto. Todo se procesa en tu dispositivo.</p>
+        <div class="privacy-note animate-in animate-in-delay-2">
+            <i class="fas fa-shield-alt"></i>
+            <span>Tus fotos <strong>nunca salen de tu dispositivo</strong></span>
         </div>
+    </section>
 
-        <div class="flex flex-col lg:flex-row gap-8">
-            
-            <!-- Panel de Herramientas -->
-            <div class="w-full lg:w-1/3 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-6">
-                
-                <div>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">1. Subir Imagen</h3>
-                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
-                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                            <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Haz clic para subir</span> o arrastra y suelta</p>
-                            <p class="text-xs text-gray-500">PNG, JPG, WEBP</p>
-                        </div>
-                        <input id="file-input" type="file" class="hidden" accept="image/*" />
-                    </label>
-                </div>
+    <!-- Layout principal -->
+    <div class="app-layout">
 
-                <div id="tools-section" class="opacity-50 pointer-events-none transition-opacity duration-300">
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">2. Herramientas</h3>
-                    <p class="text-sm text-gray-500 mb-4">Dibuja un rectángulo sobre la marca de agua en la imagen.</p>
-                    
-                    <div class="flex flex-col gap-3">
-                        <button id="btn-clear-selection" class="w-full py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center justify-center gap-2 transition">
-                            <i class="fas fa-undo"></i> Limpiar Selección
+        <!-- Panel lateral -->
+        <aside class="sidebar">
+
+            <!-- Subir imagen -->
+            <div class="panel animate-in animate-in-delay-1">
+                <div class="panel-title">Subir imagen</div>
+                <label class="upload-area" id="upload-label">
+                    <div class="upload-icon">
+                        <i class="fas fa-arrow-up-from-bracket"></i>
+                    </div>
+                    <div class="upload-text">
+                        <strong>Haz clic para subir</strong> o arrastra
+                    </div>
+                    <div class="upload-formats">PNG, JPG, WEBP</div>
+                    <input id="file-input" type="file" accept="image/*" />
+                </label>
+            </div>
+
+            <!-- Herramientas -->
+            <div class="panel animate-in animate-in-delay-2">
+                <div class="panel-title">Herramientas</div>
+                <div id="tools-section" class="tools-disabled">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                        Dibuja un rectángulo sobre la marca de agua.
+                    </p>
+                    <div class="btn-group">
+                        <button id="btn-clear-selection" class="btn btn-outline">
+                            <i class="fas fa-rotate-left"></i> Limpiar selección
                         </button>
-                        
-                        <button id="btn-remove" class="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center justify-center gap-2 transition">
-                            <i class="fas fa-magic"></i> Eliminar Marca
+                        <button id="btn-remove" class="btn btn-primary">
+                            <i class="fas fa-wand-magic-sparkles"></i> Eliminar marca
                         </button>
-
-                        <button id="btn-enhance" class="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center justify-center gap-2 transition">
-                            <i class="fas fa-expand-arrows-alt"></i> Aumentar Resolución (2x)
+                        <button id="btn-enhance" class="btn btn-accent">
+                            <i class="fas fa-up-right-and-down-left-from-center"></i> Resolución 2×
                         </button>
                     </div>
                 </div>
+            </div>
 
-                <div id="export-section" class="opacity-50 pointer-events-none transition-opacity duration-300 mt-auto pt-4 border-t border-gray-100">
-                    <button id="btn-download" class="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-bold text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center justify-center gap-2 transition">
-                        <i class="fas fa-download"></i> Descargar Imagen
+            <!-- Exportar -->
+            <div class="panel animate-in animate-in-delay-3">
+                <div class="panel-title">Exportar</div>
+                <div id="export-section" class="tools-disabled">
+                    <button id="btn-download" class="btn btn-success">
+                        <i class="fas fa-download"></i> Descargar imagen
                     </button>
                 </div>
             </div>
 
-            <!-- Área de Lienzo (Canvas) -->
-            <div class="w-full lg:w-2/3 bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center min-h-[400px]">
-                <div id="empty-state" class="text-center text-gray-400 flex flex-col items-center">
-                    <i class="far fa-image text-6xl mb-4 text-gray-300"></i>
-                    <p>La imagen aparecerá aquí</p>
+        </aside>
+
+        <!-- Canvas -->
+        <div class="canvas-area animate-in animate-in-delay-3">
+            <div id="empty-state" class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="far fa-image"></i>
                 </div>
-                
-                <div id="canvas-container" class="hidden">
-                    <canvas id="main-canvas"></canvas>
-                </div>
+                <p>La imagen aparecerá aquí</p>
             </div>
 
+            <div id="canvas-container" class="hidden">
+                <canvas id="main-canvas"></canvas>
+            </div>
         </div>
-    </main>
+
+    </div>
 
     <!-- Footer -->
-    <footer class="bg-white border-t border-gray-200 mt-auto">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <p class="text-center text-sm text-gray-500">
-                &copy; 2026 LimpiaMarcas Pro. Esta es una demostración de lienzo front-end.
-            </p>
-        </div>
+    <footer>
+        &copy; 2026 LimpiaMarcas · Procesamiento 100% local
     </footer>
 
-    <!-- Contenedor para Notificaciones Toast -->
+    <!-- Toast -->
     <div id="toast-container"></div>
 
     <script>
@@ -185,51 +677,36 @@
         const btnEnhance = document.getElementById('btn-enhance');
         const btnDownload = document.getElementById('btn-download');
 
-        // Estado de la aplicación
+        // Estado
         let currentImage = null;
         let isDrawing = false;
-        let startX = 0;
-        let startY = 0;
-        let currentX = 0;
-        let currentY = 0;
-        let selectionRect = null; // {x, y, w, h}
-        let scaleFactor = 1; // Para ajustar coordenadas si el canvas se redimensiona por CSS
+        let startX = 0, startY = 0, currentX = 0, currentY = 0;
+        let selectionRect = null;
 
-        // --- Sistema de Notificaciones (Toast) ---
+        // --- Toast ---
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
-            toast.className = 'toast';
+            toast.className = `toast toast-${type}`;
             
-            let icon = 'fa-info-circle';
-            if (type === 'success') {
-                icon = 'fa-check-circle';
-                toast.style.borderLeft = '4px solid #10b981';
-            } else if (type === 'error') {
-                icon = 'fa-exclamation-circle';
-                toast.style.borderLeft = '4px solid #ef4444';
-            }
-
-            toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+            const icons = { success: 'fa-check', error: 'fa-xmark', info: 'fa-info' };
+            toast.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i> <span>${message}</span>`;
             container.appendChild(toast);
 
-            // Animar entrada
             setTimeout(() => toast.classList.add('show'), 10);
-
-            // Eliminar después de 3 segundos
             setTimeout(() => {
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
-        // --- Carga de Imágenes ---
+        // --- Carga de imagen ---
         fileInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
 
             if (!file.type.match('image.*')) {
-                showToast('Por favor, sube un archivo de imagen válido.', 'error');
+                showToast('Sube un archivo de imagen válido.', 'error');
                 return;
             }
 
@@ -240,21 +717,40 @@
                     currentImage = img;
                     initCanvas(img);
                     
-                    // Mostrar UI
                     emptyState.classList.add('hidden');
                     canvasContainer.classList.remove('hidden');
-                    toolsSection.classList.remove('opacity-50', 'pointer-events-none');
-                    exportSection.classList.remove('opacity-50', 'pointer-events-none');
+                    toolsSection.classList.remove('tools-disabled');
+                    exportSection.classList.remove('tools-disabled');
                     
-                    showToast('Imagen cargada correctamente', 'success');
+                    showToast('Imagen cargada', 'success');
                 }
                 img.src = event.target.result;
             }
             reader.readAsDataURL(file);
         });
 
+        // Drag & drop 
+        const uploadLabel = document.getElementById('upload-label');
+        uploadLabel.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadLabel.style.borderColor = 'var(--accent)';
+            uploadLabel.style.background = 'var(--accent-light)';
+        });
+        uploadLabel.addEventListener('dragleave', () => {
+            uploadLabel.style.borderColor = '';
+            uploadLabel.style.background = '';
+        });
+        uploadLabel.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadLabel.style.borderColor = '';
+            uploadLabel.style.background = '';
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
+
         function initCanvas(img) {
-            // Establecer dimensiones reales del canvas basadas en la imagen
             canvas.width = img.width;
             canvas.height = img.height;
             selectionRect = null;
@@ -263,57 +759,63 @@
 
         function renderCanvas() {
             if (!currentImage) return;
-
-            // Limpiar canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Dibujar imagen base
             ctx.drawImage(currentImage, 0, 0);
 
-            // Dibujar rectángulo de selección si existe
+            const lineScale = canvas.width / canvas.clientWidth;
+
             if (selectionRect) {
-                ctx.fillStyle = 'rgba(79, 70, 229, 0.3)'; // Indigo con transparencia
+                ctx.fillStyle = 'rgba(79, 70, 229, 0.15)';
                 ctx.strokeStyle = '#4f46e5';
-                ctx.lineWidth = 2 * (canvas.width / canvas.clientWidth); // Ajustar grosor según escala visual
+                ctx.lineWidth = 1.5 * lineScale;
+                ctx.setLineDash([6 * lineScale, 4 * lineScale]);
                 
                 ctx.beginPath();
                 ctx.rect(selectionRect.x, selectionRect.y, selectionRect.w, selectionRect.h);
                 ctx.fill();
                 ctx.stroke();
-                
-                // Dibujar manejadores en las esquinas
-                ctx.fillStyle = 'white';
-                const handleSize = 5 * (canvas.width / canvas.clientWidth);
-                ctx.fillRect(selectionRect.x - handleSize, selectionRect.y - handleSize, handleSize*2, handleSize*2);
-                ctx.strokeRect(selectionRect.x - handleSize, selectionRect.y - handleSize, handleSize*2, handleSize*2);
+                ctx.setLineDash([]);
+
+                // Corner handles
+                ctx.fillStyle = '#fff';
+                ctx.strokeStyle = '#4f46e5';
+                ctx.lineWidth = 1.5 * lineScale;
+                const hs = 4 * lineScale;
+                const corners = [
+                    [selectionRect.x, selectionRect.y],
+                    [selectionRect.x + selectionRect.w, selectionRect.y],
+                    [selectionRect.x, selectionRect.y + selectionRect.h],
+                    [selectionRect.x + selectionRect.w, selectionRect.y + selectionRect.h]
+                ];
+                corners.forEach(([cx, cy]) => {
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, hs, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                });
             }
             
-            // Dibujar rectángulo mientras se arrastra
             if (isDrawing) {
                 const w = currentX - startX;
                 const h = currentY - startY;
-                
-                ctx.fillStyle = 'rgba(79, 70, 229, 0.2)';
+                ctx.fillStyle = 'rgba(79, 70, 229, 0.1)';
                 ctx.strokeStyle = '#4f46e5';
-                ctx.lineWidth = 2 * (canvas.width / canvas.clientWidth);
-                
+                ctx.lineWidth = 1.5 * lineScale;
+                ctx.setLineDash([6 * lineScale, 4 * lineScale]);
                 ctx.beginPath();
                 ctx.rect(startX, startY, w, h);
                 ctx.fill();
                 ctx.stroke();
+                ctx.setLineDash([]);
             }
         }
 
-        // --- Lógica de Interacción con el Canvas (Ratón y Táctil) ---
-        
+        // --- Interacción canvas ---
         function getMousePos(evt) {
             const rect = canvas.getBoundingClientRect();
-            // Calcular factor de escala porque el canvas CSS puede ser más pequeño que el canvas HTML
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
-
             let clientX, clientY;
-
             if (evt.touches && evt.touches.length > 0) {
                 clientX = evt.touches[0].clientX;
                 clientY = evt.touches[0].clientY;
@@ -321,7 +823,6 @@
                 clientX = evt.clientX;
                 clientY = evt.clientY;
             }
-
             return {
                 x: (clientX - rect.left) * scaleX,
                 y: (clientY - rect.top) * scaleY
@@ -330,33 +831,27 @@
 
         function startInteraction(e) {
             if (!currentImage) return;
-            e.preventDefault(); // Prevenir scroll en móviles
+            e.preventDefault();
             const pos = getMousePos(e);
-            startX = pos.x;
-            startY = pos.y;
-            currentX = pos.x;
-            currentY = pos.y;
+            startX = pos.x; startY = pos.y;
+            currentX = pos.x; currentY = pos.y;
             isDrawing = true;
-            selectionRect = null; // Reiniciar selección anterior
+            selectionRect = null;
         }
 
         function moveInteraction(e) {
             if (!isDrawing) return;
             e.preventDefault();
             const pos = getMousePos(e);
-            currentX = pos.x;
-            currentY = pos.y;
+            currentX = pos.x; currentY = pos.y;
             renderCanvas();
         }
 
         function endInteraction(e) {
             if (!isDrawing) return;
             isDrawing = false;
-            
             const w = currentX - startX;
             const h = currentY - startY;
-
-            // Solo guardar selección si tiene un tamaño mínimo
             if (Math.abs(w) > 10 && Math.abs(h) > 10) {
                 selectionRect = {
                     x: w > 0 ? startX : currentX,
@@ -368,18 +863,14 @@
             renderCanvas();
         }
 
-        // Eventos Mouse
         canvas.addEventListener('mousedown', startInteraction);
         canvas.addEventListener('mousemove', moveInteraction);
         window.addEventListener('mouseup', endInteraction);
-
-        // Eventos Touch (Móvil)
         canvas.addEventListener('touchstart', startInteraction, {passive: false});
         canvas.addEventListener('touchmove', moveInteraction, {passive: false});
         window.addEventListener('touchend', endInteraction);
 
         // --- Herramientas ---
-
         btnClearSelection.addEventListener('click', () => {
             selectionRect = null;
             renderCanvas();
@@ -388,14 +879,13 @@
         btnRemove.addEventListener('click', () => {
             if (!currentImage) return;
             if (!selectionRect) {
-                showToast('Por favor, dibuja un rectángulo sobre la marca de agua primero.', 'error');
+                showToast('Dibuja un rectángulo sobre la marca de agua primero.', 'error');
                 return;
             }
 
             showToast('Analizando colores del entorno...', 'info');
 
             setTimeout(() => {
-                // Renderizar la imagen limpia sin el rectángulo de selección
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.drawImage(currentImage, 0, 0);
 
@@ -404,56 +894,44 @@
                 const sw = Math.min(Math.round(selectionRect.w), canvas.width - sx);
                 const sh = Math.min(Math.round(selectionRect.h), canvas.height - sy);
 
-                // Margen para muestrear colores del borde (fuera de la selección)
                 const MARGIN = Math.max(4, Math.min(20, Math.round(Math.min(sw, sh) * 0.08)));
                 const BLEND_BORDER = Math.max(6, Math.round(Math.min(sw, sh) * 0.12));
 
-                // Obtener imageData de toda la zona + margen alrededor
                 const sampleX = Math.max(0, sx - MARGIN);
                 const sampleY = Math.max(0, sy - MARGIN);
                 const sampleW = Math.min(canvas.width - sampleX, sw + MARGIN * 2);
                 const sampleH = Math.min(canvas.height - sampleY, sh + MARGIN * 2);
                 const fullData = ctx.getImageData(sampleX, sampleY, sampleW, sampleH);
 
-                // --- 1. Muestrear colores del borde exterior de la selección ---
-                // Recogemos colores de una franja de MARGIN píxeles alrededor de la selección
                 function getPixel(imgData, localX, localY) {
-                    const x = Math.round(localX);
-                    const y = Math.round(localY);
+                    const x = Math.round(localX), y = Math.round(localY);
                     if (x < 0 || y < 0 || x >= imgData.width || y >= imgData.height) return null;
                     const idx = (y * imgData.width + x) * 4;
                     return [imgData.data[idx], imgData.data[idx+1], imgData.data[idx+2], imgData.data[idx+3]];
                 }
 
-                // Coordenadas locales relativas a fullData
                 const localSx = sx - sampleX;
                 const localSy = sy - sampleY;
-
-                // Muestrear los 4 bordes exteriores
                 const edgeSamples = { top: [], bottom: [], left: [], right: [] };
 
-                // Borde superior: franja encima de la selección
                 for (let x = localSx; x < localSx + sw; x++) {
                     for (let m = 1; m <= MARGIN; m++) {
                         const p = getPixel(fullData, x, localSy - m);
                         if (p) edgeSamples.top.push({ x: x - localSx, color: p });
                     }
                 }
-                // Borde inferior
                 for (let x = localSx; x < localSx + sw; x++) {
                     for (let m = 1; m <= MARGIN; m++) {
                         const p = getPixel(fullData, x, localSy + sh - 1 + m);
                         if (p) edgeSamples.bottom.push({ x: x - localSx, color: p });
                     }
                 }
-                // Borde izquierdo
                 for (let y = localSy; y < localSy + sh; y++) {
                     for (let m = 1; m <= MARGIN; m++) {
                         const p = getPixel(fullData, localSx - m, y);
                         if (p) edgeSamples.left.push({ y: y - localSy, color: p });
                     }
                 }
-                // Borde derecho
                 for (let y = localSy; y < localSy + sh; y++) {
                     for (let m = 1; m <= MARGIN; m++) {
                         const p = getPixel(fullData, localSx + sw - 1 + m, y);
@@ -461,7 +939,6 @@
                     }
                 }
 
-                // --- 2. Analizar si el fondo es de color plano ---
                 const allEdgeColors = [
                     ...edgeSamples.top.map(s => s.color),
                     ...edgeSamples.bottom.map(s => s.color),
@@ -471,35 +948,23 @@
 
                 function colorStats(colors) {
                     if (colors.length === 0) return { mean: [128,128,128], variance: 999 };
-                    const sum = [0, 0, 0];
-                    for (const c of colors) {
-                        sum[0] += c[0]; sum[1] += c[1]; sum[2] += c[2];
-                    }
+                    const sum = [0,0,0];
+                    for (const c of colors) { sum[0] += c[0]; sum[1] += c[1]; sum[2] += c[2]; }
                     const mean = [sum[0]/colors.length, sum[1]/colors.length, sum[2]/colors.length];
                     let varSum = 0;
-                    for (const c of colors) {
-                        varSum += (c[0]-mean[0])**2 + (c[1]-mean[1])**2 + (c[2]-mean[2])**2;
-                    }
+                    for (const c of colors) { varSum += (c[0]-mean[0])**2 + (c[1]-mean[1])**2 + (c[2]-mean[2])**2; }
                     return { mean, variance: varSum / colors.length };
                 }
 
                 const stats = colorStats(allEdgeColors);
-                const isFlatBackground = stats.variance < 150; // Umbral para fondo plano
-
-                // --- 3. Generar la zona reparada ---
+                const isFlatBackground = stats.variance < 150;
                 const patchData = ctx.getImageData(sx, sy, sw, sh);
 
-                // Calcular colores promedio por posición en los bordes (para interpolación)
-                // Para el borde superior/inferior: promedio por columna x
-                // Para el borde izquierdo/derecho: promedio por fila y
                 function avgColorAtColumn(samples, col, spread) {
                     const nearby = samples.filter(s => Math.abs(s.x - col) <= spread);
                     if (nearby.length === 0) return null;
                     const sum = [0,0,0,0];
-                    for (const s of nearby) {
-                        sum[0] += s.color[0]; sum[1] += s.color[1];
-                        sum[2] += s.color[2]; sum[3] += s.color[3];
-                    }
+                    for (const s of nearby) { sum[0]+=s.color[0]; sum[1]+=s.color[1]; sum[2]+=s.color[2]; sum[3]+=s.color[3]; }
                     return [sum[0]/nearby.length, sum[1]/nearby.length, sum[2]/nearby.length, sum[3]/nearby.length];
                 }
 
@@ -507,39 +972,28 @@
                     const nearby = samples.filter(s => Math.abs(s.y - row) <= spread);
                     if (nearby.length === 0) return null;
                     const sum = [0,0,0,0];
-                    for (const s of nearby) {
-                        sum[0] += s.color[0]; sum[1] += s.color[1];
-                        sum[2] += s.color[2]; sum[3] += s.color[3];
-                    }
+                    for (const s of nearby) { sum[0]+=s.color[0]; sum[1]+=s.color[1]; sum[2]+=s.color[2]; sum[3]+=s.color[3]; }
                     return [sum[0]/nearby.length, sum[1]/nearby.length, sum[2]/nearby.length, sum[3]/nearby.length];
                 }
 
                 const spread = Math.max(3, Math.round(Math.min(sw, sh) * 0.05));
 
                 if (isFlatBackground) {
-                    // ---- MODO COLOR PLANO ----
-                    // Rellenar con el color promedio del borde + ruido sutil para naturalidad
                     const baseColor = stats.mean;
                     const noiseLevel = Math.sqrt(stats.variance) * 0.3;
-
                     for (let y = 0; y < sh; y++) {
                         for (let x = 0; x < sw; x++) {
                             const idx = (y * sw + x) * 4;
-                            // Muestreo local más preciso: interpolar entre los bordes más cercanos
                             const topC = avgColorAtColumn(edgeSamples.top, x, spread) || baseColor;
                             const botC = avgColorAtColumn(edgeSamples.bottom, x, spread) || baseColor;
                             const leftC = avgColorAtRow(edgeSamples.left, y, spread) || baseColor;
                             const rightC = avgColorAtRow(edgeSamples.right, y, spread) || baseColor;
-
-                            const ty = y / (sh - 1 || 1); // 0 = top, 1 = bottom
-                            const tx = x / (sw - 1 || 1); // 0 = left, 1 = right
-
-                            // Interpolación bilineal de los 4 bordes
+                            const ty = y / (sh - 1 || 1);
+                            const tx = x / (sw - 1 || 1);
                             for (let c = 0; c < 3; c++) {
                                 const hBlend = topC[c] * (1 - ty) + botC[c] * ty;
                                 const vBlend = leftC[c] * (1 - tx) + rightC[c] * tx;
                                 const blended = (hBlend + vBlend) / 2;
-                                // Añadir ruido muy sutil
                                 const noise = (Math.random() - 0.5) * noiseLevel;
                                 patchData.data[idx + c] = Math.max(0, Math.min(255, Math.round(blended + noise)));
                             }
@@ -547,40 +1001,26 @@
                         }
                     }
                 } else {
-                    // ---- MODO FONDO COMPLEJO ----
-                    // Interpolación ponderada por distancia desde los 4 bordes
                     for (let y = 0; y < sh; y++) {
                         for (let x = 0; x < sw; x++) {
                             const idx = (y * sw + x) * 4;
-
                             const topC = avgColorAtColumn(edgeSamples.top, x, spread);
                             const botC = avgColorAtColumn(edgeSamples.bottom, x, spread);
                             const leftC = avgColorAtRow(edgeSamples.left, y, spread);
                             const rightC = avgColorAtRow(edgeSamples.right, y, spread);
-
-                            // Distancias al borde (normalizadas 0-1)
                             const dTop = y / (sh - 1 || 1);
                             const dBot = 1 - dTop;
                             const dLeft = x / (sw - 1 || 1);
                             const dRight = 1 - dLeft;
-
-                            // Pesos inversamente proporcionales a la distancia (con suavizado)
                             const epsilon = 0.001;
                             const wTop = topC ? 1 / (dTop + epsilon) ** 2 : 0;
                             const wBot = botC ? 1 / (dBot + epsilon) ** 2 : 0;
                             const wLeft = leftC ? 1 / (dLeft + epsilon) ** 2 : 0;
                             const wRight = rightC ? 1 / (dRight + epsilon) ** 2 : 0;
                             const wTotal = wTop + wBot + wLeft + wRight;
-
                             if (wTotal > 0) {
                                 for (let c = 0; c < 3; c++) {
-                                    const val = (
-                                        (topC ? topC[c] * wTop : 0) +
-                                        (botC ? botC[c] * wBot : 0) +
-                                        (leftC ? leftC[c] * wLeft : 0) +
-                                        (rightC ? rightC[c] * wRight : 0)
-                                    ) / wTotal;
-                                    // Añadir un toque de ruido para evitar bandas
+                                    const val = ((topC?topC[c]*wTop:0)+(botC?botC[c]*wBot:0)+(leftC?leftC[c]*wLeft:0)+(rightC?rightC[c]*wRight:0)) / wTotal;
                                     const noise = (Math.random() - 0.5) * 2;
                                     patchData.data[idx + c] = Math.max(0, Math.min(255, Math.round(val + noise)));
                                 }
@@ -590,104 +1030,70 @@
                     }
                 }
 
-                // --- 4. Aplicar el parche ---
                 ctx.putImageData(patchData, sx, sy);
 
-                // --- 5. Suavizar bordes para evitar costuras visibles ---
-                // Obtener la zona con un margen para hacer blend
+                // Suavizar bordes
                 const blendX = Math.max(0, sx - BLEND_BORDER);
                 const blendY = Math.max(0, sy - BLEND_BORDER);
                 const blendW = Math.min(canvas.width - blendX, sw + BLEND_BORDER * 2);
                 const blendH = Math.min(canvas.height - blendY, sh + BLEND_BORDER * 2);
                 const blendData = ctx.getImageData(blendX, blendY, blendW, blendH);
 
-                // Aplicar un blur gaussiano ligero solo en la franja del borde
                 function gaussianBlur(imgData, x0, y0, w, h, radius) {
                     const src = new Uint8ClampedArray(imgData.data);
                     const kernel = [];
                     const sigma = radius / 2;
                     let sum = 0;
-                    for (let i = -radius; i <= radius; i++) {
-                        const g = Math.exp(-(i * i) / (2 * sigma * sigma));
-                        kernel.push(g);
-                        sum += g;
-                    }
+                    for (let i = -radius; i <= radius; i++) { const g = Math.exp(-(i*i)/(2*sigma*sigma)); kernel.push(g); sum += g; }
                     for (let i = 0; i < kernel.length; i++) kernel[i] /= sum;
-
-                    // Horizontal
-                    for (let y = y0; y < y0 + h; y++) {
-                        for (let x = x0; x < x0 + w; x++) {
-                            let r = 0, g = 0, b = 0;
-                            for (let k = -radius; k <= radius; k++) {
-                                const px = Math.min(Math.max(x + k, 0), imgData.width - 1);
-                                const srcIdx = (y * imgData.width + px) * 4;
-                                const weight = kernel[k + radius];
-                                r += src[srcIdx] * weight;
-                                g += src[srcIdx + 1] * weight;
-                                b += src[srcIdx + 2] * weight;
+                    for (let y = y0; y < y0+h; y++) {
+                        for (let x = x0; x < x0+w; x++) {
+                            let r=0,g=0,b=0;
+                            for (let k=-radius; k<=radius; k++) {
+                                const px = Math.min(Math.max(x+k,0), imgData.width-1);
+                                const srcIdx = (y*imgData.width+px)*4;
+                                const wt = kernel[k+radius];
+                                r+=src[srcIdx]*wt; g+=src[srcIdx+1]*wt; b+=src[srcIdx+2]*wt;
                             }
-                            const dstIdx = (y * imgData.width + x) * 4;
-                            imgData.data[dstIdx] = r;
-                            imgData.data[dstIdx + 1] = g;
-                            imgData.data[dstIdx + 2] = b;
+                            const dstIdx = (y*imgData.width+x)*4;
+                            imgData.data[dstIdx]=r; imgData.data[dstIdx+1]=g; imgData.data[dstIdx+2]=b;
                         }
                     }
-                    // Copiar resultado para paso vertical
                     const mid = new Uint8ClampedArray(imgData.data);
-                    // Vertical
-                    for (let y = y0; y < y0 + h; y++) {
-                        for (let x = x0; x < x0 + w; x++) {
-                            let r = 0, g = 0, b = 0;
-                            for (let k = -radius; k <= radius; k++) {
-                                const py = Math.min(Math.max(y + k, 0), imgData.height - 1);
-                                const srcIdx = (py * imgData.width + x) * 4;
-                                const weight = kernel[k + radius];
-                                r += mid[srcIdx] * weight;
-                                g += mid[srcIdx + 1] * weight;
-                                b += mid[srcIdx + 2] * weight;
+                    for (let y = y0; y < y0+h; y++) {
+                        for (let x = x0; x < x0+w; x++) {
+                            let r=0,g=0,b=0;
+                            for (let k=-radius; k<=radius; k++) {
+                                const py = Math.min(Math.max(y+k,0), imgData.height-1);
+                                const srcIdx = (py*imgData.width+x)*4;
+                                const wt = kernel[k+radius];
+                                r+=mid[srcIdx]*wt; g+=mid[srcIdx+1]*wt; b+=mid[srcIdx+2]*wt;
                             }
-                            const dstIdx = (y * imgData.width + x) * 4;
-                            imgData.data[dstIdx] = r;
-                            imgData.data[dstIdx + 1] = g;
-                            imgData.data[dstIdx + 2] = b;
+                            const dstIdx = (y*imgData.width+x)*4;
+                            imgData.data[dstIdx]=r; imgData.data[dstIdx+1]=g; imgData.data[dstIdx+2]=b;
                         }
                     }
                 }
 
-                // Solo aplicar blur en la zona de transición borde (no en toda el área)
                 const innerX = sx - blendX;
                 const innerY = sy - blendY;
                 const blurRadius = Math.max(2, Math.round(BLEND_BORDER * 0.4));
-
-                // Franja superior
-                if (innerY > 0) {
-                    gaussianBlur(blendData, 0, Math.max(0, innerY - blurRadius), blendW, blurRadius * 2, blurRadius);
-                }
-                // Franja inferior
+                if (innerY > 0) gaussianBlur(blendData, 0, Math.max(0, innerY-blurRadius), blendW, blurRadius*2, blurRadius);
                 const bottomEdge = innerY + sh;
-                if (bottomEdge < blendH) {
-                    gaussianBlur(blendData, 0, Math.max(0, bottomEdge - blurRadius), blendW, blurRadius * 2, blurRadius);
-                }
-                // Franja izquierda
-                if (innerX > 0) {
-                    gaussianBlur(blendData, Math.max(0, innerX - blurRadius), 0, blurRadius * 2, blendH, blurRadius);
-                }
-                // Franja derecha
+                if (bottomEdge < blendH) gaussianBlur(blendData, 0, Math.max(0, bottomEdge-blurRadius), blendW, blurRadius*2, blurRadius);
+                if (innerX > 0) gaussianBlur(blendData, Math.max(0, innerX-blurRadius), 0, blurRadius*2, blendH, blurRadius);
                 const rightEdge = innerX + sw;
-                if (rightEdge < blendW) {
-                    gaussianBlur(blendData, Math.max(0, rightEdge - blurRadius), 0, blurRadius * 2, blendH, blurRadius);
-                }
+                if (rightEdge < blendW) gaussianBlur(blendData, Math.max(0, rightEdge-blurRadius), 0, blurRadius*2, blendH, blurRadius);
 
                 ctx.putImageData(blendData, blendX, blendY);
 
-                // Actualizar currentImage con el nuevo resultado
                 const newImg = new Image();
                 newImg.onload = function() {
                     currentImage = newImg;
                     selectionRect = null;
                     renderCanvas();
-                    const modeText = isFlatBackground ? 'Color plano detectado' : 'Fondo complejo interpolado';
-                    showToast(`¡Marca eliminada! (${modeText}) - 100% Local`, 'success');
+                    const modeText = isFlatBackground ? 'Color plano detectado' : 'Fondo interpolado';
+                    showToast(`¡Marca eliminada! (${modeText})`, 'success');
                 }
                 newImg.src = canvas.toDataURL('image/png');
             }, 50);
@@ -695,66 +1101,54 @@
 
         btnEnhance.addEventListener('click', () => {
             if (!currentImage) return;
-
-            showToast('Aumentando resolución (Procesando en tu dispositivo)...', 'info');
-
-            // Usamos setTimeout para permitir que la interfaz se actualice antes del procesamiento pesado
+            showToast('Aumentando resolución…', 'info');
             setTimeout(() => {
-                // Creamos un canvas temporal con el doble de tamaño de la imagen original
                 const tempCanvas = document.createElement('canvas');
                 tempCanvas.width = currentImage.width * 2;
                 tempCanvas.height = currentImage.height * 2;
                 const tempCtx = tempCanvas.getContext('2d');
-                
-                // Configuramos el renderizado de alta calidad para el upscaling
                 tempCtx.imageSmoothingEnabled = true;
                 tempCtx.imageSmoothingQuality = 'high';
-                
-                // Aplicamos un ligero filtro para mejorar nitidez y color al ampliar
                 tempCtx.filter = 'contrast(1.05) saturate(1.1) brightness(1.02)';
-                
-                // Dibujamos la imagen original a doble escala
                 tempCtx.drawImage(currentImage, 0, 0, tempCanvas.width, tempCanvas.height);
-
-                // Actualizar la imagen actual con la nueva versión de alta resolución
                 const newImg = new Image();
                 newImg.onload = function() {
                     currentImage = newImg;
-                    initCanvas(newImg); // Re-inicializamos para adaptar el canvas al nuevo tamaño
-                    showToast('¡Resolución duplicada con éxito!', 'success');
+                    initCanvas(newImg);
+                    showToast('Resolución duplicada', 'success');
                 }
-                // Exportamos con calidad máxima
-                newImg.src = tempCanvas.toDataURL('image/png', 1.0); 
+                newImg.src = tempCanvas.toDataURL('image/png', 1.0);
             }, 100);
         });
 
-        // --- Exportación ---
+        // --- Descarga con nombre TARIFA - DDMM ---
         btnDownload.addEventListener('click', () => {
             if (!currentImage) return;
             
-            // Asegurarnos de dibujar sin el rectángulo de selección activo
             const tempRect = selectionRect;
             selectionRect = null;
             renderCanvas();
 
-            // Crear enlace de descarga
+            // Generar nombre: TARIFA - DDMM
+            const now = new Date();
+            const dd = String(now.getDate()).padStart(2, '0');
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const fileName = `TARIFA - ${dd}${mm}.png`;
+
             const dataUrl = canvas.toDataURL('image/png');
             const link = document.createElement('a');
-            link.download = 'imagen_limpia_' + new Date().getTime() + '.png';
+            link.download = fileName;
             link.href = dataUrl;
             link.click();
             
-            // Restaurar selección si la había
             selectionRect = tempRect;
             renderCanvas();
-            showToast('Imagen descargada exitosamente', 'success');
+            showToast(`Descargada como "${fileName}"`, 'success');
         });
 
-        // Redibujar si la ventana cambia de tamaño para mantener consistencia
         window.addEventListener('resize', () => {
             if (currentImage) renderCanvas();
         });
-
     </script>
 </body>
 </html>
