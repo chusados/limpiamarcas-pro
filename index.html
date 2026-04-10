@@ -1121,10 +1121,11 @@
             }, 100);
         });
 
-        // --- Descarga con nombre TARIFA - DDMM ---
+        // --- Descarga con nombre TARIFA - DDMM (optimizada para web) ---
         btnDownload.addEventListener('click', () => {
             if (!currentImage) return;
             
+            // Quitar selección visual para la captura
             const tempRect = selectionRect;
             selectionRect = null;
             renderCanvas();
@@ -1135,15 +1136,48 @@
             const mm = String(now.getMonth() + 1).padStart(2, '0');
             const fileName = `TARIFA - ${dd}${mm}.png`;
 
-            const dataUrl = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
-            link.download = fileName;
-            link.href = dataUrl;
-            link.click();
-            
-            selectionRect = tempRect;
-            renderCanvas();
-            showToast(`Descargada como "${fileName}"`, 'success');
+            // Optimizar para web: limitar resolución máxima a 2000px de lado
+            const MAX_WEB_SIZE = 2000;
+            let exportCanvas = canvas;
+
+            if (canvas.width > MAX_WEB_SIZE || canvas.height > MAX_WEB_SIZE) {
+                exportCanvas = document.createElement('canvas');
+                const ratio = Math.min(MAX_WEB_SIZE / canvas.width, MAX_WEB_SIZE / canvas.height);
+                exportCanvas.width = Math.round(canvas.width * ratio);
+                exportCanvas.height = Math.round(canvas.height * ratio);
+                const exportCtx = exportCanvas.getContext('2d');
+                exportCtx.imageSmoothingEnabled = true;
+                exportCtx.imageSmoothingQuality = 'high';
+                exportCtx.drawImage(canvas, 0, 0, exportCanvas.width, exportCanvas.height);
+            }
+
+            // Convertir a Blob PNG y descargar
+            exportCanvas.toBlob(function(blob) {
+                if (!blob) {
+                    showToast('Error al generar la imagen', 'error');
+                    return;
+                }
+                const blobUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = blobUrl;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+
+                // Limpiar
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(blobUrl);
+                }, 100);
+
+                // Restaurar selección
+                selectionRect = tempRect;
+                renderCanvas();
+
+                const sizeKB = Math.round(blob.size / 1024);
+                showToast(`${fileName} descargada (${sizeKB} KB)`, 'success');
+            }, 'image/png');
         });
 
         window.addEventListener('resize', () => {
